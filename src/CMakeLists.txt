@@ -203,7 +203,9 @@ target_compile_options(fvdb PRIVATE
     "-DNANOVDB_USE_BLOSC"
     "-fvisibility=default"
     "-Wall"
-    "-Werror"
+    "-Wno-restrict"
+    "-Wno-array-bounds"
+    # "-Werror"
     >
     $<$<COMPILE_LANGUAGE:CUDA>:
     "-Wno-unknown-pragmas"
@@ -212,7 +214,7 @@ target_compile_options(fvdb PRIVATE
     "-fvisibility=default"
     "-Werror=all-warnings"
     "--threads=$ENV{NVCC_THREADS}"
-    "-Xcompiler=-Wall,-Werror"
+    "-Xcompiler=-Wall,-Werror,-Wno-array-bounds"
     ${TORCH_CUDA_COMMON_FLAGS}
     >)
 

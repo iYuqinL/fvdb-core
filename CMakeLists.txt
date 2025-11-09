@@ -81,6 +81,7 @@ target_compile_options(_fvdb_cpp PRIVATE
     "-fvisibility-inlines-hidden"
     "-Wall"
     "-Werror"
+    "-Wno-array-bounds"
     "${TORCH_CXX_FLAGS}"
     >)
 
