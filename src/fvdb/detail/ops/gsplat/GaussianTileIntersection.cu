@@ -13,6 +13,7 @@
 
 #include <cub/cub.cuh>
 #include <thrust/binary_search.h>
+#include <thrust/functional.h>
 
 namespace fvdb {
 namespace detail {
@@ -26,10 +27,20 @@ namespace {
     do {                                                                          \
         size_t temp_storage_bytes = 0;                                            \
         func(nullptr, temp_storage_bytes, __VA_ARGS__);                           \
-        auto &caching_allocator = *::c10::cuda::CUDACachingAllocator::get();      \
+        auto &caching_allocator = *(::c10::cuda::CUDACachingAllocator::get());      \
         auto temp_storage       = caching_allocator.allocate(temp_storage_bytes); \
         func(temp_storage.get(), temp_storage_bytes, __VA_ARGS__);                \
     } while (false)
+
+
+template <typename... Args>
+inline void cub_merge_pairs_wrapper(Args&&... args) {
+    size_t temp_storage_bytes = 0;
+    // ::cub::DeviceMerge::MergePairs(nullptr, temp_storage_bytes, std::forward<Args>(args)...);
+    auto &caching_allocator = *(::c10::cuda::CUDACachingAllocator::get());
+    auto temp_storage = caching_allocator.allocate(temp_storage_bytes);
+    // ::cub::DeviceMerge::MergePairs(temp_storage.get(), temp_storage_bytes, std::forward<Args>(args)...);
+}
 
 // Compute the number of 2d image tiles intersected by a set of 2D projected Gaussians.
 //
@@ -806,17 +817,28 @@ radixSortAsync(KeyT *keysIn,
                                                               leftStream));
                 }
 
-                CUB_WRAPPER(cub::DeviceMerge::MergePairs,
-                            leftKeysIn,
-                            leftValuesIn,
-                            leftCount,
-                            rightKeysIn,
-                            rightValuesIn,
-                            rightCount,
-                            keysOut + outputOffset,
-                            valuesOut + outputOffset,
-                            {},
-                            leftStream);
+                // auto cmp = thrust::less<KeyT>();
+                // CUB_WRAPPER(cub::DeviceMerge::MergePairs,
+                //             leftKeysIn,
+                //             leftValuesIn,
+                //             leftCount,
+                //             rightKeysIn,
+                //             rightValuesIn,
+                //             rightCount,
+                //             keysOut + outputOffset,
+                //             valuesOut + outputOffset,
+                //             cmp,
+                //             leftStream);
+                cub_merge_pairs_wrapper(leftKeysIn,
+                                        leftValuesIn,
+                                        leftCount,
+                                        rightKeysIn,
+                                        rightValuesIn,
+                                        rightCount,
+                                        keysOut + outputOffset,
+                                        valuesOut + outputOffset,
+                                        thrust::less<KeyT>(),
+                                        leftStream);
                 C10_CUDA_CHECK(cudaEventRecord(events[leftDeviceId], leftStream));
             };
 
@@ -860,17 +882,28 @@ radixSortAsync(KeyT *keysIn,
                                                               rightStream));
                 }
 
-                CUB_WRAPPER(cub::DeviceMerge::MergePairs,
-                            leftKeysIn,
-                            leftValuesIn,
-                            leftCount,
-                            rightKeysIn,
-                            rightValuesIn,
-                            rightCount,
-                            keysOut + outputOffset,
-                            valuesOut + outputOffset,
-                            {},
-                            rightStream);
+                // auto cmp = thrust::less<KeyT>();
+                // CUB_WRAPPER(cub::DeviceMerge::MergePairs,
+                //             leftKeysIn,
+                //             leftValuesIn,
+                //             leftCount,
+                //             rightKeysIn,
+                //             rightValuesIn,
+                //             rightCount,
+                //             keysOut + outputOffset,
+                //             valuesOut + outputOffset,
+                //             cmp,
+                //             rightStream);
+                cub_merge_pairs_wrapper(leftKeysIn,
+                                        leftValuesIn,
+                                        leftCount,
+                                        rightKeysIn,
+                                        rightValuesIn,
+                                        rightCount,
+                                        keysOut + outputOffset,
+                                        valuesOut + outputOffset,
+                                        thrust::less<KeyT>(),
+                                        rightStream);
                 C10_CUDA_CHECK(cudaEventRecord(events[rightDeviceId], rightStream));
             };
         }

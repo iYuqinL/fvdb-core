@@ -1,6 +1,7 @@
 // Copyright Contributors to the OpenVDB Project
 // SPDX-License-Identifier: Apache-2.0
 //
+#include <cmath>
 #include <fvdb/detail/ops/gsplat/GaussianMacros.cuh>
 #include <fvdb/detail/ops/gsplat/GaussianProjectionBackward.h>
 #include <fvdb/detail/ops/gsplat/GaussianUtils.cuh>
@@ -172,9 +173,9 @@ projectionBackwardKernel(const int32_t offset,
         quats += gId * 4;
         logScales += gId * 3;
         quat  = nanovdb::math::Vec4<T>(quats[0], quats[1], quats[2], quats[3]);
-        scale = nanovdb::math::Vec3<T>(::cuda::std::exp(logScales[0]),
-                                       ::cuda::std::exp(logScales[1]),
-                                       ::cuda::std::exp(logScales[2]));
+        scale = nanovdb::math::Vec3<T>(::expf(logScales[0]),
+                                       ::expf(logScales[1]),
+                                       ::expf(logScales[2]));
 
         covar = quaternionAndScaleToCovariance<T>(quat, scale);
     }

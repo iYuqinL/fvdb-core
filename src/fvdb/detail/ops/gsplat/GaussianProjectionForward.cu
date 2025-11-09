@@ -1,6 +1,7 @@
 // Copyright Contributors to the OpenVDB Project
 // SPDX-License-Identifier: Apache-2.0
 //
+#include <cmath>
 #include <fvdb/detail/ops/gsplat/GaussianProjectionForward.h>
 #include <fvdb/detail/ops/gsplat/GaussianUtils.cuh>
 #include <fvdb/detail/utils/AccessorHelpers.cuh>
@@ -113,9 +114,9 @@ template <typename T, bool Ortho> struct ProjectionForward {
         const auto logScaleAcc = mLogScalesAcc[gid];
         return quaternionAndScaleToCovariance<T>(
             Vec4(quatAcc[0], quatAcc[1], quatAcc[2], quatAcc[3]),
-            Vec3(::cuda::std::exp(logScaleAcc[0]),
-                 ::cuda::std::exp(logScaleAcc[1]),
-                 ::cuda::std::exp(logScaleAcc[2])));
+            Vec3(::expf(logScaleAcc[0]),
+                 ::expf(logScaleAcc[1]),
+                 ::expf(logScaleAcc[2])));
     }
 
     inline __device__ void
